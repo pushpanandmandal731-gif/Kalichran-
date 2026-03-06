@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern AI Assistant</title>
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --sidebar-color: #1a1d23;
+            --chat-bg: #13161c;
+            --text-main: #e0e0e0;
+            --accent-color: #4f46e5;
+            --user-msg: #2d3748;
+            --ai-msg: #1a1d23;
+            --border-color: #2d3139;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Settings Sidebar */
+        #sidebar {
+            width: 300px;
+            background: var(--sidebar-color);
+            padding: 20px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .settings-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input, select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: #0b0e14;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* Main Chat Area */
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--chat-bg);
+            position: relative;
+        }
+
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--accent-color);
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background-color: var(--ai-msg);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 2px;
+        }
+
+        /* Input Area */
+        #input-area {
+            padding: 20px;
+            background: var(--chat-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+        }
+
+        #user-input {
+            flex: 1;
+            background: #1a1d23;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            color: white;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        #send-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        #send-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .message { max-width: 90%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h3>Configuration</h3>
+        <div class="settings-group">
+            <label>OpenRouter API Key</label>
+            <input type="password" id="api-key" placeholder="sk-or-v1-....">
+        </div>
+        <div class="settings-group">
+            <label>Model</label>
+            <select id="model-select">
+                <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                <option value="google/gemini-pro-1.5">Gemini Pro 1.5</option>
+                <option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
+                <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B (Free)</option>
+            </select>
+        </div>
+        <p style="font-size: 0.7rem; color: #888;">Your key is stored only in your browser's session memory.</p>
+    </div>
+
+    <div id="chat-container">
+        <div id="messages">
+            <div class="message ai-message">Hello! Paste your API key on the left to start chatting.</div>
+        </div>
+        
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const messagesContainer = document.getElementById('messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const apiKeyInput = document.getElementById('api-key');
+        const modelSelect = document.getElementById('model-select');
+
+        function appendMessage(role, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}-message`;
+            msgDiv.innerText = text;
+            messagesContainer.appendChild(msgDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!text) return;
+            if (!apiKey) {
+                alert("Please enter your OpenRouter API Key in the sidebar.");
+                return;
+            }
+
+            // User Message
+            appendMessage('user', text);
+            userInput.value = '';
+
+            // Placeholder for AI response
+            const aiMsgDiv = document.createElement('div');
+            aiMsgDiv.className = 'message ai-message';
+            aiMsgDiv.innerText = "...";
+            messagesContainer.appendChild(aiMsgDiv);
+
+            try {
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        "model": modelSelect.value,
+                        "messages": [
+                            {"role": "user", "content": text}
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.choices && data.choices[0]) {
+                    aiMsgDiv.innerText = data.choices[0].message.content;
+                } else {
+                    aiMsgDiv.innerText = "Error: " + (data.error?.message || "Unknown error occurred.");
+                }
+
+            } catch (error) {
+                aiMsgDiv.innerText = "Fetch Error: Check your connection or API key.";
+                console.error(error);
+            }
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
